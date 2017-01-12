@@ -8,10 +8,14 @@
 #include <io.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <errno.h>
+#include <math.h>
 
 #include <gl/glew.h>
 #include "SDL.h"
+#include "SDL_image.h" 
+#include "SDL_ttf.h"
 
-bool cg_running;
+bool sj_running;
 
 #endif

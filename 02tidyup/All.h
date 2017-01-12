@@ -22,6 +22,6 @@ struct Ini{
 };
 struct Ini ini;
 
-bool cg_running;
+bool sj_running;
 
 #endif

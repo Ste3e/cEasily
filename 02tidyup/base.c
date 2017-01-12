@@ -59,7 +59,7 @@ void sj_buildWindow(void){
 	glViewport(0, 0, ini.width, ini.height);
 	
 	ok = checkError();
-	cg_running = ok;
+	sj_running = ok;
 }
 
 static bool checkError(void){	
