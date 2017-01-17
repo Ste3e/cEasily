@@ -16,7 +16,7 @@ typedef struct Button{
 	void (*build)(struct Button* this, bool over);
 }Button;
 
-Button* sj_getButton(int id, GLuint mainMap, Str* text);
+Button* sj_newButton(int id, GLuint mainMap, Str* text);
 void sj_freeButton(Button* this);
 
 #endif

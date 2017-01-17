@@ -12,7 +12,7 @@ typedef struct Frame{
 }Frame;
 
 //constructor destructor
-Frame* sj_getFrame(void);
+Frame* sj_newFrame(void);
 void sj_freeFrame(Frame* this);
 
 #endif

@@ -3,7 +3,6 @@
 #include "hud/Pane.h"
 
 static Pane p;
-static struct Widgets w;
 
 void sj_buildHud(void){
 	sj_getPane(&p);

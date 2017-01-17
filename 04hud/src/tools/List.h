@@ -13,7 +13,6 @@ typedef struct List{
 	ListNode* head;
 	ListNode* current;
 	
-	void (*reset)(struct List* this);
 	void (*add)(struct List* this, void* item);
 	void* (*get)(struct List* this, int index);
 	

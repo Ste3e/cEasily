@@ -3,8 +3,7 @@
 
 struct Frame;
 typedef struct Frame{
-	GLuint map, trimLoc;
-	float offsets[4];
+	GLuint map;
 	int imgw, imgh;
 	bool hidden;
 	
@@ -12,7 +11,7 @@ typedef struct Frame{
 }Frame;
 
 //constructor destructor
-Frame* sj_getFrame(void);
-void sj_destroyFrame(Frame* this);
+Frame* sj_newFrame(void);
+void sj_freeFrame(Frame* this);
 
 #endif

@@ -3,6 +3,7 @@
 #include "hud.h"
 #include "scene/Scene.h"
 
+bool logCreated = false;
 
 int main(int argc, char *argv[]){
 	sj_buildWindow();	
@@ -31,4 +32,32 @@ int main(int argc, char *argv[]){
 	
 	return 0;
 }
+
+//exceptions
+void sj_handleException(bool fatal, const char* msg, const char* tech){
+	FILE *log;
+	
+	if(!logCreated){
+		log = fopen("log.txt", "w");
+		logCreated = true;
+	}else{
+		log = fopen("log.txt", "a");
+	}
+		
+	if(log == NULL){
+		fprintf(stderr, "Failed to read log file\n");
+	}else{
+		fputs(msg, log);
+		if(tech != NULL){
+			fputs(tech, log);	
+		}
+		fputs("\n", log);
+		fclose(log);
+	}
+ 
+	if(fatal){
+		sj_running = false;
+	}
+}
+
 

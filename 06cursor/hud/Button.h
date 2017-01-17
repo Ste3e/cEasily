@@ -6,7 +6,7 @@ typedef struct Button{
 	int id;
 	GLuint mainMap;
 	Str* text;
-	bool virgin, dirty;
+	bool virgin;
 	int xloc, yloc;
 	SDL_Rect baseRect, innerRect, hitRect, textRect;
 	bool over;
@@ -17,7 +17,7 @@ typedef struct Button{
 	void (*checkHit)(struct Button* this);
 }Button;
 
-Button* sj_getButton(int id, GLuint mainMap, Str* text);
+Button* sj_newButton(int id, GLuint mainMap, Str* text);
 void sj_freeButton(Button* this);
 
 #endif

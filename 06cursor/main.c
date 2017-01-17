@@ -4,6 +4,7 @@
 #include "hud/Pane.h"
 #include "scene/Scene.h"
 
+static bool logCreated = false;
 
 int main(int argc, char *argv[]){
 	sj_buildWindow();	
@@ -18,7 +19,7 @@ int main(int argc, char *argv[]){
 	while(sj_running){
 		sj_left = sj_right = sj_caps = false;
 		while(SDL_PollEvent(&e)){
-			switch(e.type){ 
+			switch(e.type){
 			case SDL_KEYDOWN:
 				if(e.key.keysym.sym == SDLK_ESCAPE) sj_running = false;
 				break;
@@ -35,7 +36,6 @@ int main(int argc, char *argv[]){
 					sj_y = (int)-((((sj_yclip + 1) * ini.height) * 0.5) + cursorHalf) + ini.height; 
 				}						
 				break;
-				
 				
 			case SDL_MOUSEBUTTONDOWN:
 				if(e.button.button == SDL_BUTTON_LEFT) sj_left = true;
@@ -60,3 +60,29 @@ int main(int argc, char *argv[]){
 	return 0;
 }
 
+//exceptions
+void sj_handleException(bool fatal, const char* msg, const char* tech){
+	FILE *log;
+	
+	if(!logCreated){
+		log = fopen("log.txt", "w");
+		logCreated = true;
+	}else{
+		log = fopen("log.txt", "a");
+	}
+		
+	if(log == NULL){
+		fprintf(stderr, "Failed to read log file\n");
+	}else{
+		fputs(msg, log);
+		if(tech != NULL){
+			fputs(tech, log);	
+		}
+		fputs("\n", log);
+		fclose(log);
+	}
+ 
+	if(fatal){
+		sj_running = false;
+	}
+}

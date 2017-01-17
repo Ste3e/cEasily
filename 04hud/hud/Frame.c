@@ -1,13 +1,16 @@
 #include "../All.h"
 #include "Frame.h"
 
+//exceptions
+extern void sj_handleException(bool fatal, const char* msg, const char* tech);//main.c
+
 //struct functions
 static void draw(Frame* this);
 
 //helper functions
-static bool makeVao(void);
-static bool buildShader(void);
-static bool makeMap(void);
+static void makeVao(void);
+static void buildShader(void);
+static void makeMap(void);
 
 //variables
 static Frame* this;
@@ -16,48 +19,31 @@ static GLuint vao, shad;
 static int vcount;
 
 
-Frame* sj_getFrame(void){
+Frame* sj_newFrame(void){
+	if(initialized) return this;
+	initialized = true;
 	this = (Frame*)malloc(sizeof(Frame));
-	if(this == NULL){
-		fprintf(stderr, "malloc failed to allocate memory for Frames\n");
-		exit(EXIT_FAILURE);
-	}
-	
+	if(this == NULL) sj_handleException(true, "Failed to malloc memory for Frame.", NULL);
+		
 	this->draw = draw;
 	
-	this->offsets[0] = 1;
-	this->offsets[1] = 1;
-	this->offsets[2] = 1;
-	this->offsets[3] = 1;
 	this->imgw = ini.width;
 	this->imgh = ini.height;
 	this->hidden = false;
 	
-	if(!initialized){
-		initialized = true;
-		if(!makeVao()){
-			fprintf(stderr, "Failed to create vao for Frames\n");
-			exit(EXIT_FAILURE);
-		}
-		if(!buildShader()){
-			fprintf(stderr, "Failed to create shader for Frames\n");
-			exit(EXIT_FAILURE);
-		}
-	}
-	if(!makeMap()){
-			fprintf(stderr, "Failed to create texture map for Frames\n");
-			exit(EXIT_FAILURE);
-	}
-	
+	makeVao();
+	buildShader();
+	makeMap();
+		
 	return this;
 }
 
-void sj_destroyFrame(Frame* this){
-	
+void sj_freeFrame(Frame* frame){
+	free(frame);
 }
 
 //helper functions
-bool makeVao(void){
+void makeVao(void){
 	int floatCount;
 	
 	float verts[] = {-1, -1, -1, 1, -1, -1, 1, 1, -1, -1, -1, -1, 1, 1, -1, -1, 1, -1};
@@ -66,14 +52,14 @@ bool makeVao(void){
 	vcount = floatCount / 3;	
 	
 	glGenVertexArrays(1, &vao);
-	if(vao == 0) return false;
+	if(vao == 0) sj_handleException(true, "GL failed to allocate id for Frame vao.", NULL);
 	glBindVertexArray(vao);
 	
 	GLuint vbo, cbo;
 	glGenBuffers(1, &vbo);
-	if(vbo == 0) return false;
+	if(vbo == 0) sj_handleException(true, "GL failed to allocate id for Frame vbo.", NULL);
 	glGenBuffers(1, &cbo);
-	if(cbo == 0) return false;
+	if(cbo == 0) sj_handleException(true, "GL failed to allocate id for Frame cbo.", NULL);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(GL_ARRAY_BUFFER, floatCount * sizeof(float), &verts, GL_STATIC_DRAW);
@@ -87,10 +73,8 @@ bool makeVao(void){
 		
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
-	
-	return true;
 }
-bool buildShader(void){
+void buildShader(void){
 	const char* vert = 
 "#version 330\n"
 "layout(location = 0) in vec3 pos;\n"
@@ -110,16 +94,10 @@ bool buildShader(void){
 "}\n";
 
 	shad = glCreateProgram();
-	if(shad == 0){
-		fprintf(stderr, "GL failed to assign cursor program shader id\n");
-		return false;	
-	}
-	
+	if(shad == 0) sj_handleException(true, "GL failed to assign Frame shader id.", NULL);
+		
 	GLuint vshad = glCreateShader(GL_VERTEX_SHADER);
-	if(vshad == 0){
-		fprintf(stderr, "GL failed to assign cursor vertex shader id\n");
-		return false;	
-	}
+	if(vshad == 0) sj_handleException(true, "GL failed to assign Frame vertex shader id.", NULL);
 	glShaderSource(vshad, 1, &vert, NULL);
 	glCompileShader(vshad);
 	int status, len;
@@ -128,15 +106,11 @@ bool buildShader(void){
 		glGetShaderiv(vshad, GL_INFO_LOG_LENGTH, &len);
 		char error[len];
 		glGetShaderInfoLog(vshad, len, NULL, (char*)error);
-		fprintf(stderr, error);
-		return false;
+		sj_handleException(true, "GL failed to compile Frame's vertex shader with ", error);
 	}
 	
 	GLuint fshad = glCreateShader(GL_FRAGMENT_SHADER);
-	if(fshad == 0){
-		fprintf(stderr, "GL failed to assign cursor fragment shader id\n");
-		return false;	
-	}
+	if(fshad == 0) sj_handleException(true, "GL failed to assign Frame fragment shader id.", NULL);
 	glShaderSource(fshad, 1, &frag, NULL);
 	glCompileShader(fshad);
 	glGetShaderiv(vshad, GL_COMPILE_STATUS, &status);
@@ -144,8 +118,7 @@ bool buildShader(void){
 		glGetShaderiv(fshad, GL_INFO_LOG_LENGTH, &len);
 		char error[len];
 		glGetShaderInfoLog(fshad, len, NULL, (char*)error);
-		fprintf(stderr, error);
-		return false;
+		sj_handleException(true, "GL failed to compile Frame's fragment shader with ", error);
 	}
 	
 	glAttachShader(shad, vshad);
@@ -156,24 +129,21 @@ bool buildShader(void){
 		glGetShaderiv(shad, GL_INFO_LOG_LENGTH, &len);
 		char error[len];
 		glGetShaderInfoLog(shad, len, NULL, (char*)error);
-		fprintf(stderr, error);
-		return false;
+		sj_handleException(true, "GL failed to link Frame's shader with ", error);
 	}
 	
 	//shader variable locations
 	GLint cMapLoc = glGetUniformLocation(shad, "cMap");
-	if(cMapLoc == -1) puts("cMapLoc from Frames not got");
+	if(cMapLoc == -1) sj_handleException(false, "cMapLoc from Frame not got.", NULL);
 		
 	glUseProgram(shad);
 	glUniform1i(cMapLoc, 0);
 	glUseProgram(0);	
-	
-	return true;
 }
 
-bool makeMap(void){
+void makeMap(void){
 	SDL_Surface* base = SDL_CreateRGBSurface(0, this->imgw, this->imgh, 32, ini.rmask, ini.gmask, ini.bmask, ini.amask);
-	if(base == NULL) return false;
+	if(base == NULL) sj_handleException(true, "SDL failed to create Frame img surface with ", SDL_GetError());
 		
 	SDL_FillRect(base, NULL, SDL_MapRGBA(base->format, ini.bordColor[0], ini.bordColor[1], ini.bordColor[2], ini.bordColor[3]));
 		
@@ -187,7 +157,7 @@ bool makeMap(void){
 	glGenTextures(1, &this->map);
 	if(this->map == 0){
 		SDL_FreeSurface(base);
-		fprintf(stderr, "GL failed to provide texture id for frame");
+		sj_handleException(false, "GL failed to provide texture id for frame with ", SDL_GetError());
 	}
 	glBindTexture(GL_TEXTURE_2D, this->map);
 	
@@ -200,8 +170,6 @@ bool makeMap(void){
 	
 	glBindTexture(GL_TEXTURE_2D, 0);
 	SDL_FreeSurface(base);
-	
-	return true;
 }
 
 //DRAW

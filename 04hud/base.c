@@ -1,22 +1,19 @@
 #include "All.h"
 #include "base.h"
 
-static bool checkError(void);
+//exceptions
+extern void sj_handleException(bool fatal, const char* msg, const char* tech);
+
+//forward declarations
+static void checkError(void);
 static bool readIni(void);
 
 static SDL_GLContext context;
-static bool ok = true;
 
 void sj_buildWindow(void){
-	if(SDL_Init(SDL_INIT_VIDEO) == -1){
-		printf("SDL_Init failed: %s\n", SDL_GetError());
-		return;
-	}
+	if(SDL_Init(SDL_INIT_VIDEO) == -1) sj_handleException(true, "SDL_ video init fail.", SDL_GetError());
 	
-	if(!readIni()){
-		fprintf(stderr, "Failed to read ini file\n");
-		exit(EXIT_FAILURE);
-	}
+	if(!readIni()) sj_handleException(true, "SDL create window fail.", SDL_GetError());
 	
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
@@ -26,22 +23,13 @@ void sj_buildWindow(void){
 	
 	GLint flags = SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS | SDL_WINDOW_SHOWN;
 	win = SDL_CreateWindow("cGuigle", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, ini.width, ini.height, flags);
-	if(win == NULL){
-		printf("SDL_CreateWindow failed: %s\n", SDL_GetError());
-		return;
-	}
+	if(win == NULL) sj_handleException(true, "SDL create window fail.", SDL_GetError());
 	
 	context = SDL_GL_CreateContext(win);
-	if(context == NULL){
-		printf("SDL_GL_CreateContext failed: %s\n", SDL_GetError());
-		return;
-	}
+	if(context == NULL) sj_handleException(true, "SDL create context fail.", SDL_GetError());
 	
 	int err=glewInit();
-	if(err != GLEW_OK){
-		printf("GlewInit failed: \n");
-		return;
-	}
+	if(err != GLEW_OK) sj_handleException(true, "Glew failed to initialize\n", NULL);
 	
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -56,34 +44,31 @@ void sj_buildWindow(void){
 
 	glViewport(0, 0, ini.width, ini.height);
 	
-	ok = checkError();
-	sj_running = ok;
+	checkError();
+	sj_running = true;
 }
 
-static bool checkError(void){	
+static void checkError(void){	
 	const char* renderer = (const char*) glGetString(GL_RENDERER);
-	printf("Render is %s\n", renderer);
+	sj_handleException(false, "OpenGL renderer: ", renderer);
 	
 	const char* version = (const char*) glGetString(GL_VERSION);
-	printf("OpenGL version is %s\n", version); 
+	sj_handleException(false, "OpenGL version: ", version); 
+	
 	char c = *version;
 	if(c == '1' || c == '2'){
-		puts("Your openGL version is too low to run this program.");
-		return false;
+		sj_handleException(true, "Your openGL version is too low to run this program.", NULL);
 	}
 	
-	bool toret = true;
 	GLenum error = glGetError();
 	switch(error){
 	 	case GL_NO_ERROR: break;
-	 	case GL_INVALID_ENUM: puts("invalid enum"); toret = false; break;
-	 	case GL_INVALID_VALUE: puts("invalid value"); toret = false; break;
-	 	case GL_OUT_OF_MEMORY: puts("out of memory"); toret = false; break;
-	 	case GL_INVALID_FRAMEBUFFER_OPERATION: puts("invalid framebuffer operation"); toret = false; break;
+	 	case GL_INVALID_ENUM: sj_handleException(true, "invalid enum", NULL); break;
+	 	case GL_INVALID_VALUE: sj_handleException(true, "invalid value", NULL); break;
+	 	case GL_OUT_OF_MEMORY: sj_handleException(true, "out of memory", NULL); break;
+	 	case GL_INVALID_FRAMEBUFFER_OPERATION: sj_handleException(true, "invalid framebuffer operation", NULL); break;
 	 	default: break;	
 	}
-	
-	return toret;
 }
 
 static bool readIni(){
@@ -115,29 +100,17 @@ static bool readIni(){
 	free(font);	
 	
 	//check for files
-	if((access(ini.iniPath->ptr, F_OK)) == -1){
-		fprintf(stderr, "Cannot find main.ini");
-		return false;	
-	}
-	if((access(ini.cursorPoint->ptr, F_OK)) == -1){
-		fprintf(stderr, "Cannot find cursor's point.png");
-		return false;	
-	}
-	if((access(ini.cursorText->ptr, F_OK)) == -1){
-		fprintf(stderr, "Cannot find cursor's text.png");
-		return false;	
-	}
-	if((access(ini.fontName->ptr, F_OK)) == -1){
-		fprintf(stderr, "Cannot find font file");
-		return false;	
-	}
+	if((access(ini.iniPath->ptr, F_OK)) == -1) sj_handleException(true, "Cannot find main.ini, exiting.", NULL);
 	
+	if((access(ini.cursorPoint->ptr, F_OK)) == -1) sj_handleException(true,  "Cannot find cursor's point.png in rs/images, exiting.", NULL);
+	
+	if((access(ini.cursorText->ptr, F_OK)) == -1) sj_handleException(true,  "Cannot find cursor's text.png in rs/images, exiting.", NULL);
+	
+	if((access(ini.fontName->ptr, F_OK)) == -1) sj_handleException(true,  "In rs/fonts cannot find font file ", ini.fontName->ptr);
+		
 	//open and read ini file	
 	FILE* in = fopen("main.ini", "r");
-	if(in == NULL){
-		fprintf(stderr, "Could not open main.ini");
-		return false;
-	}
+	if(in == NULL) sj_handleException(true,  "Cannot find main.ini. Should be folder alongside main.c.", NULL);
 	
 	char line[1024];
 	while(fgets(line, sizeof(line), in)){

@@ -11,7 +11,7 @@ static Frame* guiFrame;
 void sj_getPane(Pane* pane){
 	pane->draw = draw;
 	
-	guiFrame = sj_getFrame();
+	guiFrame = sj_newFrame();
 }
 
 static void draw(void){

@@ -1,13 +1,16 @@
 #include "..\All.h"
 #include "Cursor.h"
 
-//static struct plugins
+//exceptions
+extern void sj_handleException(bool fatal, const char* msg, const char* tech);//main.c
+
+//static struct functions
 static void draw(void);
 
 //static helper functions
-static bool makeVao(void);
+static void makeVao(void);
 static GLuint makeMap(Str* texPath);
-static bool buildShader(void);
+static void buildShader(void);
 
 //variable list
 static Cursor* this;
@@ -17,46 +20,29 @@ static GLuint vao;
 static GLuint shad, cPosLoc;
 static int vcount;
 
-Cursor* sj_getCursor(void){
+Cursor* sj_newCursor(void){
 	if(initialized) return this;
 	initialized = true;
 	this = malloc(sizeof(Cursor));
-	if(this == NULL){
-		fprintf(stderr, "malloc failed to allocate memory for Cursor\n");
-		exit(EXIT_FAILURE);
-	}
+	if(this == NULL) sj_handleException(true, "malloc failed to allocate memory for Cursor.", NULL);
 	
 	this->draw = draw;
 	
-	if(!makeVao()){
-		fprintf(stderr, "Failed to build vao for Cursor\n");
-		exit(EXIT_FAILURE);
-	}
+	makeVao();
 	pointimg = makeMap(ini.cursorPoint);
-	if(pointimg == 0){
-		fprintf(stderr, "Failed to build texture for Cursor pointer\n");
-		exit(EXIT_FAILURE);
-	}
 	textimg = makeMap(ini.cursorText);
-	if(textimg == 0){
-		fprintf(stderr, "Failed to build texture for Cursor text\n");
-		exit(EXIT_FAILURE);
-	}
 	img = pointimg;
-	if(!buildShader()){
-		fprintf(stderr, "Failed to build shader for Cursor\n");
-		exit(EXIT_FAILURE);
-	}
-	
+	buildShader();
+		
 	return this;
 }
 
-void sj_freeCursor(Cursor* this){
-	
+void sj_freeCursor(Cursor* cursor){
+	free(cursor);
 }
 
 //helper functions
-static bool makeVao(void){
+static void makeVao(void){
 	float cw = (float)ini.cursorSize / (float)ini.width;
 	float ch = (float)ini.cursorSize / (float)ini.height;
 	int floatCount;
@@ -67,14 +53,14 @@ static bool makeVao(void){
 	vcount = floatCount / 3;	
 	
 	glGenVertexArrays(1, &vao);
-	if(vao == 0) return false;
+	if(vao == 0) sj_handleException(true, "SDL failed to assign vao for Cursor. ", SDL_GetError());
 	glBindVertexArray(vao);
 	
 	GLuint vbo, cbo;
 	glGenBuffers(1, &vbo);
-	if(vbo == 0) return false;
+	if(vbo == 0) sj_handleException(true, "SDL failed to assign vbo for Cursor. ", SDL_GetError());
 	glGenBuffers(1, &cbo);
-	if(cbo == 0) return false;	
+	if(cbo == 0) sj_handleException(true, "SDL failed to assign cbo for Cursor. ", SDL_GetError());
 	
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(GL_ARRAY_BUFFER, floatCount * sizeof(float), &verts, GL_STATIC_DRAW);
@@ -88,17 +74,15 @@ static bool makeVao(void){
 		
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
-	
-	return true;
 }
 
 static GLuint makeMap(Str* texPath){
 	SDL_Surface* base = IMG_Load(texPath->ptr);
-	if(base == NULL) return 0;
+	if(base == NULL) sj_handleException(true, "SDL failed to create image Surface for Cursor. ", SDL_GetError());
 	
 	GLuint toret;
 	glGenTextures(1, &toret);
-	if(toret == 0) return toret;
+	if(toret == 0) sj_handleException(true, "GL failed to assign id for Cursor texture.", NULL);
 	
 	glBindTexture(GL_TEXTURE_2D, toret);	
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -114,7 +98,7 @@ static GLuint makeMap(Str* texPath){
 	return toret;
 }
 
-static bool buildShader(void){
+static void buildShader(void){
 	const char* vert = 
 "#version 330\n"
 "layout(location = 0) in vec3 pos;\n"
@@ -135,16 +119,10 @@ static bool buildShader(void){
 "}\n";
 
 	shad = glCreateProgram();
-	if(shad == 0){
-		fprintf(stderr, "GL failed to assign cursor program shader id\n");
-		return false;	
-	}
-	
+	if(shad == 0) sj_handleException(true, "GL failed to assign id for Cursor shader program.", NULL);
+		
 	GLuint vshad = glCreateShader(GL_VERTEX_SHADER);
-	if(vshad == 0){
-		fprintf(stderr, "GL failed to assign cursor vertex shader id\n");
-		return false;	
-	}
+	if(vshad == 0) sj_handleException(true, "GL failed to assign id for Cursor vertex shader.", NULL);
 	glShaderSource(vshad, 1, &vert, NULL);
 	glCompileShader(vshad);
 	int status, len;
@@ -153,15 +131,11 @@ static bool buildShader(void){
 		glGetShaderiv(vshad, GL_INFO_LOG_LENGTH, &len);
 		char error[len];
 		glGetShaderInfoLog(vshad, len, NULL, (char*)error);
-		fprintf(stderr, error);
-		return false;
+		sj_handleException(true, "GL failed to compile Cursor vertex shader with: ", error);
 	}
 	
 	GLuint fshad = glCreateShader(GL_FRAGMENT_SHADER);
-	if(fshad == 0){
-		fprintf(stderr, "GL failed to assign cursor fragment shader id\n");
-		return false;	
-	}
+	if(fshad == 0) sj_handleException(true, "GL failed to assign id for Cursor fragment shader.", NULL);
 	glShaderSource(fshad, 1, &frag, NULL);
 	glCompileShader(fshad);
 	glGetShaderiv(vshad, GL_COMPILE_STATUS, &status);
@@ -169,8 +143,7 @@ static bool buildShader(void){
 		glGetShaderiv(fshad, GL_INFO_LOG_LENGTH, &len);
 		char error[len];
 		glGetShaderInfoLog(fshad, len, NULL, (char*)error);
-		fprintf(stderr, error);
-		return false;
+		sj_handleException(true, "GL failed to compile Cursor fragment shader with: ", error);
 	}
 	
 	glAttachShader(shad, vshad);
@@ -181,22 +154,19 @@ static bool buildShader(void){
 		glGetShaderiv(shad, GL_INFO_LOG_LENGTH, &len);
 		char error[len];
 		glGetShaderInfoLog(shad, len, NULL, (char*)error);
-		fprintf(stderr, error);
-		return false;
+		sj_handleException(true, "GL failed to link Cursor vertex and fragment shaders with: ", error);
 	}
 	
 	//shader variable locations
 	cPosLoc = glGetUniformLocation(shad, "cPos");
-	if(cPosLoc == -1) puts("cPosLoc not got");
+	if(cPosLoc == -1) sj_handleException(false, "cPosLoc not got in Cursor.c", NULL);
 	
 	GLint cMapLoc = glGetUniformLocation(shad, "cMap");
-	if(cMapLoc == -1) puts("cMapLoc from cursor not got");
+	if(cMapLoc == -1) sj_handleException(false, "cMapLoc not got in Cursor.c", NULL);
 		
 	glUseProgram(shad);
 	glUniform1i(cMapLoc, 0);
-	glUseProgram(0);	
-	
-	return true;	
+	glUseProgram(0);
 }
 
 //struct functions

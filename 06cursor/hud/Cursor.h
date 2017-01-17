@@ -7,7 +7,7 @@ typedef struct Cursor{
 }Cursor;
 
 //constructor destructor
-Cursor* sj_getCursor(void);
+Cursor* sj_newCursor(void);
 void sj_freeCursor(Cursor* this);
 
 #endif

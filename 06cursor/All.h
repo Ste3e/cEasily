@@ -30,6 +30,8 @@ struct Ini{
 	Str* cursorText;
 	int width;
 	int height;
+	int cursorSize;
+	float mouseSpeed;
 	int buttonHeight;
 	int borderSize;
 	int fontSize;
@@ -42,8 +44,6 @@ struct Ini{
 	GLubyte scrollColor[4];
 	GLubyte fontColor[4];
 	GLubyte areaColor[4];
-	int cursorSize;
-	float mouseSpeed;
 };
 struct Ini ini;
 

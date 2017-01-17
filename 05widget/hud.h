@@ -4,6 +4,7 @@
 struct Widgets{
 	int button;
 };
+struct Widgets w;
 
 void sj_buildHud(void);
 void sj_drawHud(void);

@@ -8,6 +8,7 @@
 
 //widget node
 typedef struct Node{
+	bool clean;
 	int type;
 	void* widget;
 }Node;
@@ -20,7 +21,7 @@ static void show(void);
 static void draw(void);
 
 //variables
-static Frame* guiFrame;
+static Frame* frame;
 static List* widList;
 
 void sj_getPane(Pane* pane){
@@ -32,10 +33,10 @@ void sj_getPane(Pane* pane){
 	pane->show = show;
 	pane->draw = draw;
 	
-	guiFrame = sj_getFrame();
+	frame = sj_newFrame();
 }
 void sj_freePane(void){
-	sj_freeFrame(guiFrame);
+	sj_freeFrame(frame);
 	int i;
 	for(i = 0; i < widList->count; i++){
 		Node* tmp = (Node*)widList->get(widList, i);	
@@ -62,8 +63,9 @@ static int addButton(char* text){
 		exit(-1);
 	}	
 	int id = widList->count;
+	node->clean = false;
 	node->type = BUTTON;
-	node->widget = sj_getButton(id, guiFrame->map, sj_newStr(text));	
+	node->widget = sj_newButton(id, frame->map, sj_newStr(text));	
 	widList->add(widList, node);	
 	
 	return id;
@@ -72,10 +74,10 @@ static int addButton(char* text){
 //alter widgets
 static void setSize(int index, int w, int h){
 	Node* tmp = (Node*)widList->get(widList, index);		
-		
+	
 	switch(tmp->type){
 	case BUTTON:
-		{
+		{			
 			Button* b = ((Button*)tmp->widget);
 			b->setSize(b, w, h);
 		}
@@ -96,7 +98,7 @@ static void setLoc(int index, int x, int y, bool mainHud){
 		//widget is on dialog Frame	
 	}
 		
-	Node* tmp = (Node*)widList->get(widList, index);		
+	Node* tmp = (Node*)widList->get(widList, index);
 		
 	switch(tmp->type){
 	case BUTTON:
@@ -115,7 +117,8 @@ static void setLoc(int index, int x, int y, bool mainHud){
 static void show(){
 	int i;
 	for(i = 0; i < widList->count; i++){
-		Node* tmp = (Node*)widList->get(widList, i);		
+		Node* tmp = (Node*)widList->get(widList, i);
+		if(tmp->clean) continue;
 		
 		switch(tmp->type){
 		case BUTTON:
@@ -132,7 +135,7 @@ static void show(){
 }
 
 static void draw(void){
-	guiFrame->draw(guiFrame);
+	frame->draw(frame);
 }
 
 

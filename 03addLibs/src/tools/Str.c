@@ -1,5 +1,8 @@
 #include "../../All.h"
 
+//exceptions
+extern void sj_handleException(bool fatal, const char* msg, const char* tech);
+
 Str* sj_newStr(const char* src){
 	size_t len = strlen(src);
 		
@@ -8,9 +11,7 @@ Str* sj_newStr(const char* src){
 	
 	toret->len = len;
 	toret->ptr = malloc((len + 1) * sizeof(char));
-	if(toret->ptr == NULL){
-		fprintf(stderr, "Failed to malloc Str.");
-	}
+	if(toret->ptr == NULL) sj_handleException(true, "Failed to malloc Str struct.", NULL);
 	
 	if(len == 0){
 		char empty[1];
