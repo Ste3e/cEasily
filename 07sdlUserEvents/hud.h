@@ -2,7 +2,7 @@
 #define HUD_H
 
 struct Widgets{
-	int button; 
+	int button;
 };
 struct Widgets w;
 

@@ -1,6 +1,9 @@
 #include "../All.h"
 #include "Button.h"
 
+//exceptions
+extern void sj_handleException(bool fatal, const char* msg, const char* tech);//main.c
+
 //static struct functions
 static void build(struct Button* this, bool over);
 static void setSize(struct Button* this, int w, int h);
@@ -12,31 +15,28 @@ static void calculateAreas(void);
 
 static Button* this;
 
-Button* sj_getButton(int id, GLuint mainMap, Str* text){
+Button* sj_newButton(int id, GLuint mainMap, Str* text){
 	this = malloc(sizeof(Button));
-	if(this == NULL){
-		fprintf(stderr, "malloc failed to allocate memory for Button\n");
-		exit(EXIT_FAILURE);
-	}
+	if(this == NULL) sj_handleException(true, "malloc failed to allocate memory for Button\n", NULL);
 	
 	this->id = id;
 	this->mainMap = mainMap;
 	this->text = text;
 	this->virgin = true;
-	this->dirty = true;
 	this->xloc = this->yloc = 0;
 	this->over = false;
+	
+	//function pointers
+	this->setSize = setSize;
+	this->setLoc = setLoc;
+	this->build = build;
+	this->checkHit = checkHit;
 	
 	//preliminary sizing 
 	this->textRect.x = this->textRect.y = 0;
 	TTF_SizeText(ini.font, this->text->ptr, &this->textRect.w, &this->textRect.h);
 	this->baseRect.w = this->textRect.w;
 	this->baseRect.h = this->textRect.h;
-		
-	this->setSize = setSize;
-	this->setLoc = setLoc;
-	this->build = build;
-	this->checkHit = checkHit;
 	
 	return this;
 }
@@ -51,10 +51,10 @@ static void setSize(struct Button* button, int w, int h){
 	
 	if(w > this->baseRect.w){
 		this->baseRect.w = w;	
-	}
+	} else sj_handleException(false, "Text on button is wider than given dimensions for button: ", this->text->ptr);
 	if(h > this->baseRect.h){
 		this->baseRect.h = h;	
-	}
+	} else sj_handleException(false, "Text on button is higher than given dimensions for button: ", this->text->ptr);
 }
 
 static void setLoc(struct Button* button, int x, int y){
@@ -66,7 +66,6 @@ static void setLoc(struct Button* button, int x, int y){
 
 //build the button image and copy into main hud texture
 static void build(struct Button* button, bool over){
-	if(!this->dirty) return;
 	this = button;
 	if(this->virgin){
 		this->virgin = false;
@@ -75,7 +74,7 @@ static void build(struct Button* button, bool over){
 	
 	//make button image
 	SDL_Surface* img = SDL_CreateRGBSurface(0, this->baseRect.w, this->baseRect.h, 32, ini.rmask, ini.gmask, ini.bmask, ini.amask);
-	SDL_assert(img != NULL);
+	if(img == NULL) sj_handleException(true, "SDL failed to generate button image surface. ", SDL_GetError());
 	
 	Uint8 color[4];
 	if(over){
@@ -98,13 +97,14 @@ static void build(struct Button* button, bool over){
 	
 	//write text on button
 	SDL_Color fontColor = {ini.fontColor[0], ini.fontColor[1], ini.fontColor[2], ini.fontColor[3]};
-	SDL_Surface* stext;
+	SDL_Surface* stext = NULL;
 	if(this->text->len < 1){
 		stext = TTF_RenderText_Blended(ini.font, " ", fontColor);
 	}else{
 		stext = TTF_RenderText_Blended(ini.font, this->text->ptr, fontColor);
 	}
-	SDL_assert(stext != NULL);
+	if(stext == NULL) sj_handleException(true, "SDL failed to generate button's text image surface. ", SDL_GetError());
+	
 	SDL_BlitSurface(stext, NULL, img, &this->textRect);	
 	
 	//transfer button onto main hud image
@@ -131,14 +131,14 @@ static void calculateAreas(void){
 }
 
 //events
-static void checkHit(struct Button* b){
+static void checkHit(Button* b){
 	this = b;
 	
 	if(sj_x > this->hitRect.x && sj_x < this->hitRect.w && sj_y > this->hitRect.y && sj_y < this->hitRect.h){	
 		if(sj_left){
-			UsrEvent* ue = sj_UsrEvent();
-			ue->sdat = this->text->ptr;
-			SDL_UserEvent se = {.type = SDL_USEREVENT, .code = this->id, .data1 = ue, .data2 = NULL};
+			GuiEvent* ge = sj_newGuiEvent();
+			ge->sdat = this->text->ptr;
+			SDL_UserEvent se = {.type = SDL_USEREVENT, .code = this->id, .data1 = ge, .data2 = NULL};
 			SDL_Event e = {.type = SDL_USEREVENT, .user = se};
 			SDL_PushEvent(&e);			
 		}

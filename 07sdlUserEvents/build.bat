@@ -3,8 +3,8 @@ del /F /Q bin\app.exe
 set GCC=D:/cSDL/mingw64/bin/gcc.exe
 set files=main.c base.c hud.c
 set scene=scene/Scene.c
-set tools=src/tools/List.c src/tools/Str.c src/tools/UsrEvent.c
-set hud=hud/Pane.c hud/Cursor.c hud/Frame.c hud/Button.c
+set tools=src/tools/List.c src/tools/Str.c
+set hud=hud/Pane.c hud/Cursor.c hud/GuiEvent.c hud/Frame.c hud/Button.c
 
 set head=-Isrc/include/SDL2 -Isrc/include/GL 
 set lib=-lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -mwindows -lopengl32 -Lsrc/lib/ 

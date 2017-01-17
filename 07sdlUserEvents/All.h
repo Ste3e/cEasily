@@ -20,7 +20,7 @@
 
 #include "src/tools/List.h"
 #include "src/tools/Str.h"
-#include "src/tools/UsrEvent.h"
+#include "hud/GuiEvent.h"
 
 struct Ini{
 	TTF_Font* font;
@@ -31,6 +31,8 @@ struct Ini{
 	Str* cursorText;
 	int width;
 	int height;
+	int cursorSize;
+	float mouseSpeed;
 	int buttonHeight;
 	int borderSize;
 	int fontSize;
@@ -43,8 +45,6 @@ struct Ini{
 	GLubyte scrollColor[4];
 	GLubyte fontColor[4];
 	GLubyte areaColor[4];
-	int cursorSize;
-	float mouseSpeed;
 };
 struct Ini ini;
 
